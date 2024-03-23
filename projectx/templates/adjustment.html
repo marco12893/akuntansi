@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Adjustment
+{% endblock %}
+
+{% block main %}
+
+<form action="/adjustment" method="post">
+    <input type="number" name="month" placeholder="Month">
+    <input type="number" name="year" placeholder="Year">
+    <button type="submit">Input</button>
+</form>
+
+
+{% endblock %}

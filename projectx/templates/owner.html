@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Owner
+{% endblock %}
+
+{% block main %}
+
+<form action="/owner" method="post">
+    <input type="number" name="month" placeholder="Month">
+    <input type="number" name="year" placeholder="Year">
+    <button type="submit">Input</button>
+</form>
+
+
+{% endblock %}
+
