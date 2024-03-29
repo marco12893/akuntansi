@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Owner Equity
+{% endblock %}
+
+{% block main %}
+
+<style>
+    table {
+        width: 80%;
+        margin: 20px auto;
+        border-collapse: collapse;
+        text-align: center;
+    }
+
+    th, td {
+        padding: 12px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    tr:hover {
+        background-color: #f5f5f5;
+    }
+</style>
+
+<table>
+    <tr>
+      <th>Owner Capital</th>
+      <td>{{ "{:,.2f}".format(owner_capital + current_capital_credit) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Net Income</th>
+        <td>{{ "{:,.2f}".format(income) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+    <tr>
+        <th>Owner Capital + Revenue</th>
+        <td>{{ "{:,.2f}".format(owner_capital + income + current_capital_credit) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Owner Drawing</th>
+        <td>{{ "{:,.2f}".format(current_drawing_debit) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Final Owner Capital</th>
+        <td>{{ "{:,.2f}".format(owner_capital + income + current_capital_credit - current_drawing_debit) }}</td>
+    </tr>
+
+</table>
+
+{% endblock %}
