@@ -78,6 +78,9 @@ def input():
         debit_value = request.form.get("debit_value")
         credit_value = request.form.get("credit_value")
 
+        if debit_value != credit_value:
+            return render_template("input.html", accounts=ACCOUNTS, journals=JOURNALS)
+
         if debit_account in Asset:
             debit_type = "Asset"
         elif debit_account in Asset_Depreciation:
@@ -256,11 +259,310 @@ def income_statement():
 
 @app.route("/owner", methods=["GET", "POST"])
 def owner_equity():
+    if request.method == "POST":
+            if 1 > int(request.form.get("month")) > 12:
+                return render_template("owner.html")
+            month = request.form.get("month")
+            month = "0" + month
+            year = request.form.get("year")
+
+            date= year+"-"+month
+
+            revenue_credit = db.execute(
+            "SELECT SUM(Credit) FROM ( SELECT Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+            )
+
+            total_expense = db.execute(
+            "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Expense' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Expense' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+            )
+
+
+        #owner capital sblm
+            capital_credit = db.execute(
+            "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+        )
+            drawing_debit = db.execute(
+            "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+        )
+
+        #owner capital skrg
+            current_capital_credit = db.execute(
+            "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
+            month,
+            year,
+            month,
+            year,
+        )
+            current_drawing_debit = db.execute(
+            "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%m', General_Journal.Date) =  ?  AND strftime('%Y', General_Journal.Date) =  ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%m', Adjustment_Journal.Date) =  ?  AND strftime('%Y', Adjustment_Journal.Date) =  ? )",
+            month,
+            year,
+            month,
+            year,
+        )
+
+            revenue_credit = revenue_credit[0]["SUM(Credit)"]
+            if revenue_credit == None:
+                revenue_credit = 0
+
+            total_expense = total_expense[0]["SUM(Debit)"]
+            if total_expense == None:
+                total_expense = 0
+
+            capital_credit = capital_credit[0]["SUM(Credit)"]
+            if capital_credit == None:
+                capital_credit = 0
+
+            drawing_debit = drawing_debit[0]["SUM(Debit)"]
+            if drawing_debit == None:
+                drawing_debit = 0
+
+            current_capital_credit = current_capital_credit[0]["SUM(Credit)"]
+            if current_capital_credit == None:
+                current_capital_credit = 0
+
+            current_drawing_debit = current_drawing_debit[0]["SUM(Debit)"]
+            if current_drawing_debit == None:
+                current_drawing_debit = 0
+
+            owner_capital= revenue_credit + capital_credit - total_expense - drawing_debit
+            revenue_debit2 = db.execute(
+                "SELECT SUM(Debit) FROM ( SELECT Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
+                month,
+                year,
+                month,
+                year,
+            )
+
+            revenue_credit2 = db.execute(
+                "SELECT SUM(Credit) FROM ( SELECT Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
+                month,
+                year,
+                month,
+                year,
+            )
+
+            total_expense2 = db.execute(
+                "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Expense' AND strftime('%m', General_Journal.Date) =  ?  AND strftime('%Y', General_Journal.Date) =  ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Expense' AND strftime('%m', Adjustment_Journal.Date) =  ?  AND strftime('%Y', Adjustment_Journal.Date) =  ? )",
+                month,
+                year,
+                month,
+                year,
+            )
+
+            revenue_debit2 = revenue_debit2[0]["SUM(Debit)"]
+            revenue_credit2 = revenue_credit2[0]["SUM(Credit)"]
+            if revenue_debit2 == None:
+                revenue_debit2 = 0
+            if revenue_credit2 == None:
+                revenue_credit2 = 0
+            revenue2 = revenue_credit2 - revenue_debit2
+
+            total_expense2 = total_expense2[0]["SUM(Debit)"]
+
+            income=revenue2-total_expense2
+
+            return render_template(
+                "owner_equity.html",
+                owner_capital=owner_capital,
+                current_capital_credit=current_capital_credit,
+                current_drawing_debit=current_drawing_debit,
+                income=income
+            )
+
+
     if request.method == "GET":
         return render_template("owner.html")
 
 @app.route("/balance", methods=["GET", "POST"])
 def balance_sheet():
-    
+    if request.method == "POST":
+            if 1 > int(request.form.get("month")) > 12:
+                return render_template("balance.html")
+            month = request.form.get("month")
+            month = "0" + month
+            year = request.form.get("year")
+
+            date= year+"-"+month
+
+            revenue_credit = db.execute(
+            "SELECT SUM(Credit) FROM ( SELECT Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+            )
+
+            total_expense = db.execute(
+            "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Expense' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Expense' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+            )
+
+
+        #owner capital sblm
+            capital_credit = db.execute(
+            "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+        )
+            drawing_debit = db.execute(
+            "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%Y-%m', Date) < ? UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%Y-%m', Date) < ?)",
+            date,
+            date
+        )
+
+        #owner capital skrg
+            current_capital_credit = db.execute(
+            "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE CA_Name = 'Owner Capital' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
+            month,
+            year,
+            month,
+            year,
+        )
+            current_drawing_debit = db.execute(
+            "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%m', General_Journal.Date) =  ?  AND strftime('%Y', General_Journal.Date) =  ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE DA_Name = 'Owner Drawing' AND strftime('%m', Adjustment_Journal.Date) =  ?  AND strftime('%Y', Adjustment_Journal.Date) =  ? )",
+            month,
+            year,
+            month,
+            year,
+        )
+
+            revenue_credit = revenue_credit[0]["SUM(Credit)"]
+            if revenue_credit == None:
+                revenue_credit = 0
+
+            total_expense = total_expense[0]["SUM(Debit)"]
+            if total_expense == None:
+                total_expense = 0
+
+            capital_credit = capital_credit[0]["SUM(Credit)"]
+            if capital_credit == None:
+                capital_credit = 0
+
+            drawing_debit = drawing_debit[0]["SUM(Debit)"]
+            if drawing_debit == None:
+                drawing_debit = 0
+
+            current_capital_credit = current_capital_credit[0]["SUM(Credit)"]
+            if current_capital_credit == None:
+                current_capital_credit = 0
+
+            current_drawing_debit = current_drawing_debit[0]["SUM(Debit)"]
+            if current_drawing_debit == None:
+                current_drawing_debit = 0
+
+            owner_capital= revenue_credit + capital_credit - total_expense - drawing_debit
+            revenue_debit2 = db.execute(
+                "SELECT SUM(Debit) FROM ( SELECT Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
+                month,
+                year,
+                month,
+                year,
+            )
+
+            revenue_credit2 = db.execute(
+                "SELECT SUM(Credit) FROM ( SELECT Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
+                month,
+                year,
+                month,
+                year,
+            )
+
+            total_expense2 = db.execute(
+                "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Expense' AND strftime('%m', General_Journal.Date) =  ?  AND strftime('%Y', General_Journal.Date) =  ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Expense' AND strftime('%m', Adjustment_Journal.Date) =  ?  AND strftime('%Y', Adjustment_Journal.Date) =  ? )",
+                month,
+                year,
+                month,
+                year,
+            )
+
+            revenue_debit2 = revenue_debit2[0]["SUM(Debit)"]
+            revenue_credit2 = revenue_credit2[0]["SUM(Credit)"]
+            if revenue_debit2 == None:
+                revenue_debit2 = 0
+            if revenue_credit2 == None:
+                revenue_credit2 = 0
+            revenue2 = revenue_credit2 - revenue_debit2
+
+            total_expense2 = total_expense2[0]["SUM(Debit)"]
+            if total_expense2 == None:
+                total_expense2 = 0
+
+            income=revenue2-total_expense2
+
+            capital = owner_capital + current_capital_credit - current_drawing_debit + income
+
+
+            total_Asset_Debit = db.execute(
+                "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Asset' AND strftime('%Y-%m', Date) <= ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Asset' AND strftime('%Y-%m', Date) <= ? )",
+            date,
+            date
+            )
+
+            total_Asset_Credit = db.execute(
+                "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Asset' AND strftime('%Y-%m', Date) <= ?  UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Asset' AND strftime('%Y-%m', Date) <= ? )",
+            date,
+            date
+            )
+
+            total_Asset_Depreciation_Credit = db.execute(
+                "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Asset_Depreciation' AND strftime('%Y-%m', Date) <= ?  UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Asset_Depreciation' AND strftime('%Y-%m', Date) <= ? )",
+            date,
+            date
+            )
+
+            total_Liabilities_Debit = db.execute(
+                "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Liabilities' AND strftime('%Y-%m', Date) <= ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Liabilities' AND strftime('%Y-%m', Date) <= ? )",
+            date,
+            date
+            )
+
+            total_Liabilities_Credit = db.execute(
+                "SELECT SUM(Credit) FROM ( SELECT CA_Name, Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Liabilities' AND strftime('%Y-%m', Date) <= ?  UNION ALL SELECT CA_Name, Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Liabilities' AND strftime('%Y-%m', Date) <= ? )",
+            date,
+            date
+            )
+
+            total_Asset_Debit = total_Asset_Debit[0]["SUM(Debit)"]
+            total_Asset_Credit = total_Asset_Credit[0]["SUM(Credit)"]
+            if total_Asset_Debit == None:
+                total_Asset_Debit = 0
+            if total_Asset_Credit == None:
+                total_Asset_Credit = 0
+
+            total_Liabilities_Debit = total_Liabilities_Debit[0]["SUM(Debit)"]
+            total_Liabilities_Credit = total_Liabilities_Credit[0]["SUM(Credit)"]
+            if total_Liabilities_Debit == None:
+                total_Liabilities_Debit = 0
+            if total_Liabilities_Credit == None:
+                total_Liabilities_Credit = 0
+            print(total_Liabilities_Debit)
+            print(total_Liabilities_Credit)
+            print(total_Asset_Debit)
+            print(total_Asset_Credit)
+            total_Asset_Depreciation_Credit = total_Asset_Depreciation_Credit[0]["SUM(Credit)"]
+            if total_Asset_Depreciation_Credit == None:
+                total_Asset_Depreciation_Credit = 0
+
+            total_Asset = total_Asset_Debit - total_Asset_Credit
+            total_Liabilities = total_Liabilities_Credit - total_Liabilities_Debit
+            total_Asset_Depreciation = total_Asset_Depreciation_Credit
+
+
+
+            return render_template(
+                "balance_sheet.html",
+                capital=capital,
+                total_Asset = total_Asset,
+                total_Liabilities= total_Liabilities,
+                total_Asset_Depreciation = total_Asset_Depreciation
+            )
     if request.method == "GET":
         return render_template("balance.html")
