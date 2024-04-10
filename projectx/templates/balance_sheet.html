@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Income Statement
+{% endblock %}
+
+{% block main %}
+
+<style>
+    table {
+        width: 80%;
+        margin: 20px auto;
+        border-collapse: collapse;
+        text-align: center;
+    }
+
+    th, td {
+        padding: 12px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    tr:hover {
+        background-color: #f5f5f5;
+    }
+</style>
+
+<table>
+    <tr>
+      <th>Total Asset</th>
+      <td>{{ "{:,.2f}".format(total_Asset) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Asset Depreciation</th>
+        <td>-{{ "{:,.2f}".format(total_Asset_Depreciation) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Total Asset</th>
+        <td>{{ "{:,.2f}".format(total_Asset - total_Asset_Depreciation) }}</td>
+    </tr>
+
+</table>
+
+<table>
+    <tr>
+      <th>Liabilities</th>
+      <td>{{ "{:,.2f}".format(total_Liabilities) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Equity</th>
+        <td>{{ "{:,.2f}".format(capital) }}</td>
+    </tr>
+
+    <tr>
+        <th></th>
+        <td></td>
+    </tr>
+
+    <tr>
+        <th>Total Liability + Equity</th>
+        <td>{{ "{:,.2f}".format(total_Liabilities + capital) }}</td>
+    </tr>
+
+</table>
+
+{% endblock %}
