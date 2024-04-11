@@ -1,9 +1,10 @@
-#App.py
+# App.py
+Declares an accounting database to be used
 ```
 db = SQL("sqlite:///accounting.db")
 ```
-Declares an accounting database to be used
 
+Lists all of the things that will be used in the accounting database
 ```
 ACCOUNTS = [
     "Cash",
@@ -62,15 +63,15 @@ Expense = [
     "Internet Expense",
 ]
 ```
-Lists all of the things that will be used in the accounting database
 
+Renders an index.html template as a homepage
 ```
 @app.route("/")
 def index():
     return render_template("index.html")
 ```
-Renders an index.html template as a homepage
 
+Gets date input, debit account input, credit account input, debit value input, and credit value input
 ```
 @app.route("/input", methods=["GET", "POST"])
 def input():
@@ -81,9 +82,8 @@ def input():
         debit_value = request.form.get("debit_value")
         credit_value = request.form.get("credit_value")
 ```
-Gets date input, debit account input, credit account input, debit value input, and credit value input
 
-
+Matches the debit account input and the debit account list
 ```
 if debit_account in Asset:
     debit_type = "Asset"
@@ -98,8 +98,8 @@ elif debit_account in Revenue:
 elif debit_account in Expense:
     debit_type = "Expense"
 ```
-Matches the debit account input and the debit account list
 
+Matches the credit account input and the credit account list
 ```
 if credit_account in Asset:
     credit_type = "Asset"
@@ -114,8 +114,8 @@ elif credit_account in Revenue:
 elif credit_account in Expense:
     credit_type = "Expense"
 ```
-Matches the credit account input and the credit account list
 
+Inserts the current date when the general or adjustment journal is inputted and gets its ID
 ```
 if request.form.get("journal") == "General Journal":
     db.execute("INSERT INTO General_Journal (Date) VALUES (?)", date)
@@ -125,8 +125,8 @@ else:
 id_row = db.execute("SELECT last_insert_rowid() AS id")
 id = id_row[0]["id"]
 ```
-Inserts the current date when the general or adjustment journal is inputted and gets its ID
 
+Inserts all of the inputted data into the general or adjustment journal
 ```
 if request.form.get("journal") == "General Journal":
     db.execute(
@@ -162,15 +162,15 @@ else:
         id,
     )
 ```
-Inserts all of the inputted data into the general or adjustment journal
 
+Renders the input.html
 ```
 return redirect("/input")
     if request.method == "GET":
         return render_template("input.html", accounts=ACCOUNTS, journals=JOURNALS)
 ```
-Renders the input.html
 
+Checks if the month is between 1 (January) and 12 (December)
 ```
 @app.route("/general", methods=["GET", "POST"])
 def general_journal():
@@ -178,10 +178,9 @@ def general_journal():
         if 1 > int(request.form.get("month")) > 12:
             return render_template("general.html")
 ```
-Checks if the month is between 1 (January) and 12 (December)
 
+Displays the content of the general journal based on the month and year inputted
 ```
-
         month = request.form.get("month")
         month = "0" + month
         year = request.form.get("year")
@@ -193,14 +192,14 @@ Checks if the month is between 1 (January) and 12 (December)
 
         return render_template("general_journal.html", journal=journal)
 ```
-Displays the content of the general journal based on the month and year inputted
 
+Renders the general.html
 ```
     if request.method == "GET":
         return render_template("general.html")
 ```
-Renders the general.html
 
+Checks if the month is between 1 (January) and 12 (December)
 ```
 @app.route("/adjustment", methods=["GET", "POST"])
 def adjustment_journal():
@@ -208,8 +207,8 @@ def adjustment_journal():
         if 1 > int(request.form.get("month")) > 12:
             return render_template("adjustment.html")
 ```
-Checks if the month is between 1 (January) and 12 (December)
 
+Displays the content of the adjustment journal based on the month and year inputted
 ```
         month = request.form.get("month")
         month = "0" + month
@@ -222,14 +221,14 @@ Checks if the month is between 1 (January) and 12 (December)
 
         return render_template("adjustment_journal.html", journal=journal)
 ```
-Displays the content of the adjustment journal based on the month and year inputted
 
+Renders the adjustment.html
 ```
     if request.method == "GET":
         return render_template("adjustment.html")
 ```
-Renders the adjustment.html
 
+Selects the revenue debit by summing up all the debits from the general and adjustment journal where the debit type is revenue
 ```
 @app.route("/income", methods=["GET", "POST"])
 def income_statement():
@@ -248,8 +247,8 @@ def income_statement():
             year,
         )
 ```
-Selects the revenue debit by summing up all the debits from the general and adjustment journal where the debit type is revenue
 
+Selects the revenue credit by summing up all the credits from the general and adjustment journal where the credit type is revenue
 ```
         revenue_credit = db.execute(
             "SELECT SUM(Credit) FROM ( SELECT Credit FROM Credit_Account JOIN General_Journal ON Credit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Revenue' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT Credit FROM Credit_Account JOIN Adjustment_Journal ON Credit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Revenue' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?)",
@@ -259,8 +258,8 @@ Selects the revenue debit by summing up all the debits from the general and adju
             year,
         )
 ```
-Selects the revenue credit by summing up all the credits from the general and adjustment journal where the credit type is revenue
 
+Selects the expense debit by summing up all the debits from the general and adjustment journal where the debit type is expense
 ```
         expense_debit = db.execute(
             "SELECT DA_Name, SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Expense' AND strftime('%m', General_Journal.Date) = ? AND strftime('%Y', General_Journal.Date) = ? UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Expense' AND strftime('%m', Adjustment_Journal.Date) = ? AND strftime('%Y', Adjustment_Journal.Date) = ?) GROUP BY DA_Name",
@@ -270,8 +269,8 @@ Selects the revenue credit by summing up all the credits from the general and ad
             year,
         )
 ```
-Selects the expense debit by summing up all the debits from the general and adjustment journal where the debit type is expense
 
+Selects the total expense by summing up all the debits from the general and adjustment journal where the debit type is expense
 ```
         total_expense = db.execute(
             "SELECT SUM(Debit) FROM ( SELECT DA_Name, Debit FROM Debit_Account JOIN General_Journal ON Debit_Account.GJ_ID = General_Journal.GJ_ID WHERE Type = 'Expense' AND strftime('%m', General_Journal.Date) =  ?  AND strftime('%Y', General_Journal.Date) =  ?  UNION ALL SELECT DA_Name, Debit FROM Debit_Account JOIN Adjustment_Journal ON Debit_Account.AJ_ID = Adjustment_Journal.AJ_ID WHERE Type = 'Expense' AND strftime('%m', Adjustment_Journal.Date) =  ?  AND strftime('%Y', Adjustment_Journal.Date) =  ? )",
@@ -281,8 +280,8 @@ Selects the expense debit by summing up all the debits from the general and adju
             year,
         )
 ```
-Selects the total expense by summing up all the debits from the general and adjustment journal where the debit type is expense
 
+Calculates the revenue by subtracting revenue credit from revenue debit
 ```
 revenue_debit = revenue_debit[0]["SUM(Debit)"]
 revenue_credit = revenue_credit[0]["SUM(Credit)"]
@@ -292,22 +291,22 @@ if revenue_credit == None:
     revenue_credit = 0
 revenue = revenue_credit - revenue_debit
 ```
-Calculates the revenue by subtracting revenue credit from revenue debit
 
+Renders the income.html
 ```
 if request.method == "GET":
     return render_template("income.html")
 ```
-Renders the income.html
 
+Renders the owner.html
 ```
 @app.route("/owner", methods=["GET", "POST"])
 def owner_equity():
     if request.method == "GET":
         return render_template("owner.html")
 ```
-Renders the owner.html
 
+Renders the balance.html
 ```
 @app.route("/balance", methods=["GET", "POST"])
 def balance_sheet():
@@ -315,30 +314,3 @@ def balance_sheet():
     if request.method == "GET":
         return render_template("balance.html")
 ```
-Renders the balance.html
-
-#Adjusment.html
-
-#Adjustment_journal.html
-
-#Balance.html
-
-#Balance_sheet.html
-
-#General.html
-
-#General_journal.html
-
-#Income.html
-
-#Income_statement.html
-
-#Index.html
-
-#Input.html
-
-#Layout.html
-
-#Owner.html
-
-#Owner_equity.html
